@@ -70,11 +70,16 @@ async def send_message(bot, channel_id, message_type, message_tag, user=None, te
     channel_text_footer = '\n'
     if user is not None:
         user_id = html.escape(str(user.id or ''))
-        username = html.escape(str(user.username))
+        username = "@" + html.escape(str(user.username))
+        if user.username is None:
+            username = None
+
+        profile_name = html.escape(str(user.first_name))
+
         channel_text_footer = (
             f'User ID: {user_id}\n'
-            f'Username: @{username}\n'
-            f'Профиль: <a href="tg://user?id={user_id}">{username or user_id}</a>\n'
+            f'Username: {username or "—"}\n'
+            f'Профиль: <a href="tg://user?id={user_id}">{username or profile_name}</a>\n'
             f'#{message_tag}'
         )
     channel_text_body = ''
