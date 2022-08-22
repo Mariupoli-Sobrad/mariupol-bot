@@ -76,10 +76,12 @@ async def send_message(bot, channel_id, message_type, message_tag, user=None, te
 
         profile_name = html.escape(str(user.first_name))
 
+        print(user)
+
         channel_text_footer = (
             f'User ID: {user_id}\n'
             f'Username: {username or "—"}\n'
-            f'Профиль: <a href="tg://user?id={user_id}">{username or profile_name}</a>\n'
+            f'Профиль: {user.mention_html()}\n'
             f'#{message_tag}'
         )
     channel_text_body = ''
