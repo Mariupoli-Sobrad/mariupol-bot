@@ -52,7 +52,8 @@ def _(key):
 
 WHAT_YOU_WANT, I_WANT_TO_HELP, FEEDBACK_MODE, RESTART, I_NEED_HELP, COUNTRY_SWITCH, LEAVE_RUSSIA, \
 ESTONIA_SWITCH, PROTECTION_SWITCH, HELP_IN_ESTONIA_SWITCH, QUESTIONNAIRE_SWITCH, NEW_USER, EXISTING_USER, \
-ACTION_SWITCH, TICKET_EDIT, EMERGENCY, NEW_USER_ASK_FOR_LAST_NAME, NEW_USER_ASK_FOR_DETAILS = range(18)
+ACTION_SWITCH, TICKET_EDIT, EMERGENCY, NEW_USER_ASK_FOR_LAST_NAME, NEW_USER_ASK_FOR_DETAILS, \
+NEW_USER_ASK_FOR_CONTACT_INFO = range(19)
 
 
 def get_restart_markup():
@@ -65,7 +66,8 @@ def get_restart_markup():
     return reply_markup
 
 
-async def send_message(bot, channel_id, message_type, message_tag, user=None, text=None, last_name=None, details=None):
+async def send_message(bot, channel_id, message_type, message_tag, user=None, text=None,
+                       last_name=None, details=None, contact_info=None):
     channel_text_header = f'Тип обращения: {message_type}\n'
     channel_text_footer = '\n'
     if user is not None:
@@ -74,16 +76,13 @@ async def send_message(bot, channel_id, message_type, message_tag, user=None, te
         if user.username is None:
             username = None
 
-        profile_name = html.escape(str(user.first_name))
-
-        print(user)
-
         channel_text_footer = (
             f'User ID: {user_id}\n'
             f'Username: {username or "—"}\n'
             f'Профиль: {user.mention_html()}\n'
             f'#{message_tag}'
         )
+
     channel_text_body = ''
     if text:
         channel_text_body += html.escape(str(text) or '') + '\n'
@@ -91,6 +90,8 @@ async def send_message(bot, channel_id, message_type, message_tag, user=None, te
         channel_text_body += 'Фамилия: ' + html.escape(str(last_name or '')) + '\n'
     if details:
         channel_text_body += 'Детали: ' + html.escape(str(details or '')) + '\n'
+    if contact_info:
+        channel_text_body += 'Контакты: ' + html.escape(str(contact_info or '')) + '\n'
 
     channel_text = channel_text_header + channel_text_body + channel_text_footer
     await bot.send_message(
@@ -366,8 +367,15 @@ async def new_user_last_name(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 
 async def new_user_details(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    details = update.message.text
+    context.user_data['details'] = update.message.text
+    await update.message.reply_text(_('i_need_help_wizard.questionnaire.new_user.ask_for_contact'))
+    return NEW_USER_ASK_FOR_CONTACT_INFO
+
+
+async def new_user_contact_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
     last_name = context.user_data['last_name']
+    details = context.user_data['details']
+    contact_info = update.message.text
 
     await send_message(
         bot=update.message.get_bot(),
@@ -376,7 +384,8 @@ async def new_user_details(update: Update, context: ContextTypes.DEFAULT_TYPE):
         message_tag='new_request',
         user=update.message.from_user,
         last_name=last_name,
-        details=details
+        details=details,
+        contact_info=contact_info
     )
 
     await update.message.reply_text(_('i_need_help_wizard.final'), reply_markup=get_restart_markup())
@@ -614,6 +623,9 @@ def main() -> None:
             ],
             NEW_USER_ASK_FOR_DETAILS: [
                 MessageHandler(PRIVATE_TEXT, new_user_details),
+            ],
+            NEW_USER_ASK_FOR_CONTACT_INFO: [
+                MessageHandler(PRIVATE_TEXT, new_user_contact_info),
             ],
             EXISTING_USER: [
                 MessageHandler(PRIVATE_TEXT, existing_user_switch),
