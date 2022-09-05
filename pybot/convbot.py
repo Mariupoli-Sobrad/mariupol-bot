@@ -560,7 +560,7 @@ def main() -> None:
                 key, value = line.strip().split('=')
                 os.environ[key] = value
 
-    persistence = PicklePersistence(filepath=os.path.join(path, 'conversationbot'))
+    persistence = PicklePersistence(filepath=os.path.join(path, 'conversationbot_v2'))
     application = Application.builder().token(os.environ['TOKEN']).persistence(persistence).build()
 
     PRIVATE_TEXT = filters.TEXT & filters.ChatType.PRIVATE
