@@ -54,7 +54,7 @@ def _(key):
 WHAT_YOU_WANT, I_WANT_TO_HELP, FEEDBACK_MODE, RESTART, I_NEED_HELP, COUNTRY_SWITCH, LEAVE_RUSSIA, \
 ESTONIA_SWITCH, PROTECTION_SWITCH, HELP_IN_ESTONIA_SWITCH, QUESTIONNAIRE_SWITCH, NEW_USER, EXISTING_USER, \
 ACTION_SWITCH, TICKET_EDIT, EMERGENCY, NEW_USER_ASK_FOR_LAST_NAME, NEW_USER_ASK_FOR_DETAILS, \
-NEW_USER_ASK_FOR_CONTACT_INFO = range(19)
+NEW_USER_ASK_FOR_CONTACT_INFO, GIFTS_SELECT, GIFTS_DONATOR, GIFTS_PARENT = range(22)
 
 
 def get_restart_markup():
@@ -111,6 +111,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             InlineKeyboardButton(_('i_need_help_button'), callback_data='i_need_help_button'),
         ], [
             InlineKeyboardButton(_('i_want_to_help_button'), callback_data='i_want_to_help_button'),
+        ], [
+            InlineKeyboardButton(_('gifts.starting_point'), callback_data='gifts_select')
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -463,7 +465,7 @@ async def emergency(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return EMERGENCY
 
 
-async def emergency_result(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def emergency_result(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     last_name = context.user_data['last_name']
     emergency_text = update.message.text
 
@@ -478,6 +480,69 @@ async def emergency_result(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     await update.message.reply_text(_('i_need_help_wizard.final'), reply_markup=get_restart_markup())
+    return RESTART
+
+
+async def gifts_select(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    keyboard = [
+        [
+            InlineKeyboardButton(_('gifts.donator_question'), callback_data='gifts_donator'),
+        ], [
+            InlineKeyboardButton(_('gifts.parent_question'), callback_data='gifts_parent'),
+        ], [
+            InlineKeyboardButton(_('back'), callback_data='restart')
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await query.message.reply_text(_('gifts.select_text'), reply_markup=reply_markup)
+
+    return GIFTS_SELECT
+
+
+async def gifts_donator(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    await finish_previous_query(query)
+    await query.message.reply_text(_('gifts.donator_question_prompt'))
+    return GIFTS_DONATOR
+
+
+async def gifts_parent(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    await finish_previous_query(query)
+    await query.message.reply_text(_('gifts.parent_question_prompt'))
+    return GIFTS_PARENT
+
+
+async def gifts_donator_result(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    question_text = update.message.text
+
+    await send_message(
+        bot=update.message.get_bot(),
+        channel_id=os.environ['GIFTS_CHANNEL_ID'],
+        message_type='ПРОЕКТ ПОДАРКИ: ДАРИТЕЛЬ',
+        message_tag='gifts_donator',
+        user=update.message.from_user,
+        details=question_text,
+    )
+
+    await update.message.reply_text(_('gifts.final'), reply_markup=get_restart_markup())
+    return RESTART
+
+
+async def gifts_parent_result(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    question_text = update.message.text
+
+    await send_message(
+        bot=update.message.get_bot(),
+        channel_id=os.environ['GIFTS_CHANNEL_ID'],
+        message_type='ПРОЕКТ ПОДАРКИ: РОДИТЕЛЬ',
+        message_tag='gifts_parent',
+        user=update.message.from_user,
+        details=question_text,
+    )
+
+    await update.message.reply_text(_('gifts.final'), reply_markup=get_restart_markup())
     return RESTART
 
 
@@ -496,6 +561,9 @@ async def restart(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ],
         [
             InlineKeyboardButton(_('i_want_to_help_button'), callback_data='i_want_to_help_button'),
+        ],
+        [
+            InlineKeyboardButton(_('gifts.starting_point'), callback_data='gifts_select')
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -573,6 +641,7 @@ def main() -> None:
             WHAT_YOU_WANT: [
                 CallbackQueryHandler(i_need_help, pattern='^i_need_help_button$'),
                 CallbackQueryHandler(i_want_to_help, pattern='^i_want_to_help_button$'),
+                CallbackQueryHandler(gifts_select, pattern='^gifts_select$'),
             ],
             I_WANT_TO_HELP: [
                 CallbackQueryHandler(i_want_to_help__volunteer, pattern='^want_to_help__volunteer'),
@@ -635,6 +704,17 @@ def main() -> None:
             ],
             EMERGENCY: [
                 MessageHandler(PRIVATE_TEXT, emergency_result),
+            ],
+            GIFTS_SELECT: [
+                CallbackQueryHandler(gifts_donator, pattern='^gifts_donator$'),
+                CallbackQueryHandler(gifts_parent, pattern='^gifts_parent$'),
+                CallbackQueryHandler(restart, pattern='^restart$'),
+            ],
+            GIFTS_DONATOR: [
+                MessageHandler(PRIVATE_TEXT, gifts_donator_result),
+            ],
+            GIFTS_PARENT: [
+                MessageHandler(PRIVATE_TEXT, gifts_parent_result),
             ]
         },
         fallbacks=[CommandHandler('finish', finish)],
