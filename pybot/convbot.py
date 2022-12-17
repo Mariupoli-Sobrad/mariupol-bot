@@ -717,8 +717,7 @@ def main() -> None:
                 MessageHandler(PRIVATE_TEXT, gifts_parent_result),
             ]
         },
-        fallbacks=[CommandHandler('finish', finish),
-                   CommandHandler('start', start)]
+        fallbacks=[CommandHandler('finish', finish), CommandHandler('start', start)],
         per_chat=False,
         name="conv_handler",
         persistent=True
