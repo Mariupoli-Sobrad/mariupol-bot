@@ -6,6 +6,14 @@ what_you_want: Здравствуйте! Какой у вас вопрос?
 how_you_want_to_help: Как вы хотите помочь?
 i_need_help_button: Мне нужна помощь
 i_want_to_help_button: Я хочу помочь
+gifts:
+  starting_point: Проект "Подарки с Друзьями Мариуполя"
+  select_text: Пожалуйста, выберите нужный раздел
+  donator_question: Вопрос от дарителя
+  parent_question: Вопрос от родителя
+  donator_question_prompt: Пожалуйста, введите текст вашего вопроса
+  parent_question_prompt: Пожалуйста, введите текст вашего вопроса
+  final: Спасибо за ваше обращение! Мы свяжемся с вами в ближайшее время!
 i_need_help:
   ask_for_contact: >
     Назовите свое имя, номер телефона по которому вам можно дозвониться,
