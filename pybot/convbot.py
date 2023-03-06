@@ -546,7 +546,7 @@ def get_starting_choice_keyboard() -> list[list[InlineKeyboardButton]]:
         ]
     ]
 
-    if os.environ["GIFT_FEATURE_ACTIVE"] == "true":
+    if os.environ.get('GIFT_FEATURE_ACTIVE', 'false') == 'true':
         keyboard.append([
             InlineKeyboardButton(_('gifts.starting_point'), callback_data='gifts_select')
         ])
