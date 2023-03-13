@@ -3,6 +3,7 @@ import logging, os
 import yaml
 import os
 import html
+from typing import List
 
 from telegram import __version__ as TG_VER, InlineKeyboardButton, InlineKeyboardMarkup
 import traceback
@@ -52,9 +53,9 @@ def _(key):
 
 
 WHAT_YOU_WANT, I_WANT_TO_HELP, FEEDBACK_MODE, RESTART, I_NEED_HELP, COUNTRY_SWITCH, LEAVE_RUSSIA, \
-ESTONIA_SWITCH, PROTECTION_SWITCH, HELP_IN_ESTONIA_SWITCH, QUESTIONNAIRE_SWITCH, NEW_USER, EXISTING_USER, \
-ACTION_SWITCH, TICKET_EDIT, EMERGENCY, NEW_USER_ASK_FOR_LAST_NAME, NEW_USER_ASK_FOR_DETAILS, \
-NEW_USER_ASK_FOR_CONTACT_INFO, GIFTS_SELECT, GIFTS_DONATOR, GIFTS_PARENT = range(22)
+    ESTONIA_SWITCH, PROTECTION_SWITCH, HELP_IN_ESTONIA_SWITCH, QUESTIONNAIRE_SWITCH, NEW_USER, EXISTING_USER, \
+    ACTION_SWITCH, TICKET_EDIT, EMERGENCY, NEW_USER_ASK_FOR_LAST_NAME, NEW_USER_ASK_FOR_DETAILS, \
+    NEW_USER_ASK_FOR_CONTACT_INFO, GIFTS_SELECT, GIFTS_DONATOR, GIFTS_PARENT = range(22)
 
 
 def get_restart_markup():
@@ -105,17 +106,7 @@ async def send_message(bot, channel_id, message_type, message_tag, user=None, te
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Starts the conversation and asks the user about their gender."""
-
-    keyboard = [
-        [
-            InlineKeyboardButton(_('i_need_help_button'), callback_data='i_need_help_button'),
-        ], [
-            InlineKeyboardButton(_('i_want_to_help_button'), callback_data='i_want_to_help_button'),
-        ], [
-            InlineKeyboardButton(_('gifts.starting_point'), callback_data='gifts_select')
-        ]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    reply_markup = InlineKeyboardMarkup(get_starting_choice_keyboard())
     await update.message.reply_text(_('what_you_want'), reply_markup=reply_markup)
 
     return WHAT_YOU_WANT
@@ -546,6 +537,23 @@ async def gifts_parent_result(update: Update, context: ContextTypes.DEFAULT_TYPE
     return RESTART
 
 
+def get_starting_choice_keyboard() -> list[list[InlineKeyboardButton]]:
+    keyboard = [
+        [
+            InlineKeyboardButton(_('i_need_help_button'), callback_data='i_need_help_button'),
+        ], [
+            InlineKeyboardButton(_('i_want_to_help_button'), callback_data='i_want_to_help_button'),
+        ]
+    ]
+
+    if os.environ.get('GIFT_FEATURE_ACTIVE', 'false') == 'true':
+        keyboard.append([
+            InlineKeyboardButton(_('gifts.starting_point'), callback_data='gifts_select')
+        ])
+
+    return keyboard
+
+
 async def restart(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     in_callback_query = False
@@ -555,18 +563,8 @@ async def restart(update: Update, context: ContextTypes.DEFAULT_TYPE):
         message = query.message
     else:
         message = update.message
-    keyboard = [
-        [
-            InlineKeyboardButton(_('i_need_help_button'), callback_data='i_need_help_button'),
-        ],
-        [
-            InlineKeyboardButton(_('i_want_to_help_button'), callback_data='i_want_to_help_button'),
-        ],
-        [
-            InlineKeyboardButton(_('gifts.starting_point'), callback_data='gifts_select')
-        ]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    reply_markup = InlineKeyboardMarkup(get_starting_choice_keyboard())
     if message is not None:
         await message.reply_text(_('what_you_want'), reply_markup=reply_markup)
     else:
