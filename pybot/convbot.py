@@ -28,7 +28,7 @@ from telegram.ext import (
     MessageHandler,
     filters, CallbackQueryHandler, PicklePersistence,
 )
-from telegram.error import BadRequest
+from telegram.error import BadRequest, Conflict
 
 # Enable logging
 logging.basicConfig(
@@ -589,6 +589,10 @@ async def gen_error(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.error(msg="Exception while handling an update:", exc_info=context.error)
 
+    # Ignore errors of this type, don't post to the error channel.
+    # TODO: Ensure that we have exactly one compute instance
+    if isinstance(context.error, Conflict) and 'terminated by other getUpdates request' in context.error.message:
+        return RESTART
     tb_list = traceback.format_exception(None, context.error, context.error.__traceback__)
     tb_string = "".join(tb_list)
 
